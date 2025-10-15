@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { SkillCategory, SubSkill, TrainingSession, Skill } from '../types';
 import { initialSkatingData, initialTrainingData } from '../data/initialData';
 import { useAuth } from './AuthContext';
-import { loadUserSkills, saveUserSkills, loadTrainingData, saveTrainingData } from '../services/firestoreService';
+import { loadUserSkills, loadTrainingData, saveUserData } from '../services/firestoreService';
 
 interface SkatingDataContextType {
   userSkillsData: SkillCategory[];
@@ -11,6 +11,7 @@ interface SkatingDataContextType {
   updateSubSkill: (categoryId: string, skillId: string, subSkillId: string, updates: Partial<SubSkill>) => void;
   addTrainingSession: (session: TrainingSession) => void;
   updateTrainingSession: (sessionId: string, updates: Partial<TrainingSession>) => void;
+  deleteTrainingSession: (sessionId: string) => void;
   addCustomSkill: (categoryId: string, skillName: string) => void;
   addSubSkill: (categoryId: string, skillId: string, subSkillName: string) => void;
   deleteSkill: (categoryId: string, skillId: string) => void;
@@ -69,15 +70,9 @@ export const SkatingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   useEffect(() => {
     if (user && isDataLoaded) {
-      saveUserSkills(user.uid, userSkillsData);
+      saveUserData(user.uid, userSkillsData, trainingData);
     }
-  }, [user, userSkillsData, isDataLoaded]);
-
-  useEffect(() => {
-    if (user && isDataLoaded) {
-      saveTrainingData(user.uid, trainingData);
-    }
-  }, [user, trainingData, isDataLoaded]);
+  }, [user, userSkillsData, trainingData, isDataLoaded]);
 
   const updateSubSkill = useCallback((categoryId: string, skillId: string, subSkillId: string, updates: Partial<SubSkill>) => {
     setUserSkillsData(prevData =>
@@ -112,6 +107,10 @@ export const SkatingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   
   const updateTrainingSession = useCallback((sessionId: string, updates: Partial<TrainingSession>) => {
     setTrainingData(prev => prev.map(session => session.id === sessionId ? { ...session, ...updates } : session));
+  }, []);
+
+  const deleteTrainingSession = useCallback((sessionId: string) => {
+    setTrainingData(prev => prev.filter(session => session.id !== sessionId));
   }, []);
 
   const addSkillToShop = useCallback((skillName: string) => {
@@ -283,6 +282,7 @@ export const SkatingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     updateSubSkill,
     addTrainingSession,
     updateTrainingSession,
+    deleteTrainingSession,
     addCustomSkill,
     addSubSkill,
     deleteSkill,
