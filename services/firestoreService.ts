@@ -4,18 +4,16 @@ import { SkillCategory, TrainingSession } from '../types';
 
 const USERS_COLLECTION = 'users';
 
-// Function to save user skills data
-export const saveUserSkills = async (userId: string, data: SkillCategory[]): Promise<void> => {
+export const saveUserData = async (userId: string, skills: SkillCategory[], trainings: TrainingSession[]): Promise<void> => {
   try {
     const userDocRef = doc(db, USERS_COLLECTION, userId);
-    await setDoc(userDocRef, { skills: data }, { merge: true });
+    await setDoc(userDocRef, { skills, trainings }, { merge: true });
   } catch (error) {
-    console.error("Error saving user skills:", error);
-    throw new Error('Failed to save skills data.');
+    console.error("Error saving user data:", error);
+    throw new Error('Failed to save user data.');
   }
 };
 
-// Function to load user skills data
 export const loadUserSkills = async (userId: string): Promise<SkillCategory[] | null> => {
   try {
     const userDocRef = doc(db, USERS_COLLECTION, userId);
@@ -30,18 +28,6 @@ export const loadUserSkills = async (userId: string): Promise<SkillCategory[] | 
   }
 };
 
-// Function to save user training data
-export const saveTrainingData = async (userId: string, data: TrainingSession[]): Promise<void> => {
-  try {
-    const userDocRef = doc(db, USERS_COLLECTION, userId);
-    await setDoc(userDocRef, { trainings: data }, { merge: true });
-  } catch (error) {
-    console.error("Error saving user training data:", error);
-    throw new Error('Failed to save training data.');
-  }
-};
-
-// Function to load user training data
 export const loadTrainingData = async (userId: string): Promise<TrainingSession[] | null> => {
   try {
     const userDocRef = doc(db, USERS_COLLECTION, userId);
