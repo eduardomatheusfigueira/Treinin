@@ -1,6 +1,6 @@
 import React from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
-import { SkatingDataProvider } from './context/SkatingDataContext';
+import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import MainLayout from './components/MainLayout';
 import SkillsDashboard from './pages/SkillsDashboard';
@@ -19,7 +19,7 @@ const App: React.FC = () => {
             path="/*"
             element={
               <ProtectedRoute>
-                <SkatingDataProvider>
+                <AppProvider>
                   <MainLayout>
                     <Routes>
                       <Route path="/" element={<SkillsDashboard />} />
@@ -27,7 +27,7 @@ const App: React.FC = () => {
                       <Route path="/skill-shop" element={<SkillShop />} />
                     </Routes>
                   </MainLayout>
-                </SkatingDataProvider>
+                </AppProvider>
               </ProtectedRoute>
             }
           />

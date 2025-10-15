@@ -14,7 +14,7 @@ export interface Skill {
   subSkills: SubSkill[];
 }
 
-export interface SkillCategory {
+export interface Sport {
   id: string;
   name: string;
   skills: Skill[];
