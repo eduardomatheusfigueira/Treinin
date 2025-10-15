@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { SkillCategory, SubSkill, TrainingSession, Skill } from '../types';
 import { initialSkatingData, initialTrainingData } from '../data/initialData';
+import { useAuth } from './AuthContext';
+import { loadUserSkills, saveUserSkills, loadTrainingData, saveTrainingData } from '../services/firestoreService';
 
 interface SkatingDataContextType {
   userSkillsData: SkillCategory[];
@@ -27,9 +29,55 @@ const initialUserSkills: SkillCategory[] = [{
 }];
 
 export const SkatingDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [userSkillsData, setUserSkillsData] = useState<SkillCategory[]>(initialUserSkills);
   const [availableSkillsData, setAvailableSkillsData] = useState<SkillCategory[]>(initialSkatingData);
   const [trainingData, setTrainingData] = useState<TrainingSession[]>(initialTrainingData);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (user) {
+        setIsDataLoaded(false);
+        const [skills, trainings] = await Promise.all([
+          loadUserSkills(user.uid),
+          loadTrainingData(user.uid)
+        ]);
+
+        if (skills) {
+          setUserSkillsData(skills);
+        } else {
+          setUserSkillsData(initialUserSkills);
+        }
+
+        if (trainings) {
+          setTrainingData(trainings);
+        } else {
+          setTrainingData(initialTrainingData);
+        }
+        setIsDataLoaded(true);
+      } else {
+        setUserSkillsData(initialUserSkills);
+        setTrainingData(initialTrainingData);
+        setAvailableSkillsData(initialSkatingData);
+        setIsDataLoaded(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
+
+  useEffect(() => {
+    if (user && isDataLoaded) {
+      saveUserSkills(user.uid, userSkillsData);
+    }
+  }, [user, userSkillsData, isDataLoaded]);
+
+  useEffect(() => {
+    if (user && isDataLoaded) {
+      saveTrainingData(user.uid, trainingData);
+    }
+  }, [user, trainingData, isDataLoaded]);
 
   const updateSubSkill = useCallback((categoryId: string, skillId: string, subSkillId: string, updates: Partial<SubSkill>) => {
     setUserSkillsData(prevData =>
