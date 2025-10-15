@@ -3,15 +3,24 @@ import { Link } from 'react-router-dom';
 import { useSkatingData } from '../context/SkatingDataContext';
 import ProgressBar from '../components/ProgressBar';
 import { ChevronDownIcon, SparklesIcon, PlusIcon, TrashIcon, BookOpenIcon } from '../components/Icons';
-import { Skill, SubSkill, SkillCategory } from '../types';
+import { Skill, SubSkill } from '../types';
 import Modal from '../components/Modal';
 import { getSkillTips } from '../services/geminiService';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface SkillDetailModalProps {
   subSkill: SubSkill | null;
   onClose: () => void;
   onUpdate: (updates: Partial<SubSkill>) => void;
 }
+
+type ItemToDelete = {
+    type: 'skill' | 'subskill';
+    name: string;
+    categoryId: string;
+    skillId: string;
+    subSkillId?: string;
+};
 
 const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, onClose, onUpdate }) => {
   const [youtubeLink, setYoutubeLink] = useState('');
@@ -135,9 +144,14 @@ const SubSkillItem: React.FC<{ subSkill: SubSkill, onUpdateProgress: (progress: 
 };
 
 
-const SkillItem: React.FC<{ categoryId: string, skill: Skill }> = ({ categoryId, skill }) => {
+const SkillItem: React.FC<{ 
+    categoryId: string, 
+    skill: Skill,
+    onRequestDeleteSkill: (skillId: string, skillName: string) => void,
+    onRequestDeleteSubSkill: (skillId: string, subSkillId: string, subSkillName: string) => void
+}> = ({ categoryId, skill, onRequestDeleteSkill, onRequestDeleteSubSkill }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { updateSubSkill, addSubSkill, deleteSkill, deleteSubSkill } = useSkatingData();
+  const { updateSubSkill, addSubSkill } = useSkatingData();
   const [selectedSubSkill, setSelectedSubSkill] = useState<SubSkill | null>(null);
   const [isAddingSubSkill, setIsAddingSubSkill] = useState(false);
 
@@ -160,11 +174,11 @@ const SkillItem: React.FC<{ categoryId: string, skill: Skill }> = ({ categoryId,
   
   const handleDeleteSkill = (e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteSkill(categoryId, skill.id);
+    onRequestDeleteSkill(skill.id, skill.name);
   };
 
-  const handleDeleteSubSkill = (subSkillId: string) => {
-    deleteSubSkill(categoryId, skill.id, subSkillId);
+  const handleDeleteSubSkill = (subSkillId: string, subSkillName: string) => {
+    onRequestDeleteSubSkill(skill.id, subSkillId, subSkillName);
   };
 
   return (
@@ -200,7 +214,7 @@ const SkillItem: React.FC<{ categoryId: string, skill: Skill }> = ({ categoryId,
                     subSkill={subSkill} 
                     onUpdateProgress={(p) => handleUpdateProgress(subSkill.id, p)}
                     onSelect={() => setSelectedSubSkill(subSkill)}
-                    onDelete={() => handleDeleteSubSkill(subSkill.id)}
+                    onDelete={() => handleDeleteSubSkill(subSkill.id, subSkill.name)}
                 />
             ))}
              <div className="mt-4">
@@ -237,14 +251,45 @@ const SkillItem: React.FC<{ categoryId: string, skill: Skill }> = ({ categoryId,
 
 
 const SkillsDashboard: React.FC = () => {
-  const { userSkillsData, addCustomSkill } = useSkatingData();
+  const { userSkillsData, addCustomSkill, deleteSkill, deleteSubSkill } = useSkatingData();
   const [addingSkillToCategory, setAddingSkillToCategory] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<ItemToDelete | null>(null);
   
   if (!userSkillsData || userSkillsData.length === 0) {
     return <div>Carregando...</div>
   }
 
   const mainCategory = userSkillsData[0];
+
+  const handleRequestDeleteSkill = (skillId: string, skillName: string) => {
+    setItemToDelete({
+        type: 'skill',
+        name: skillName,
+        categoryId: mainCategory.id,
+        skillId: skillId,
+    });
+  };
+
+  const handleRequestDeleteSubSkill = (skillId: string, subSkillId: string, subSkillName: string) => {
+      setItemToDelete({
+          type: 'subskill',
+          name: subSkillName,
+          categoryId: mainCategory.id,
+          skillId: skillId,
+          subSkillId: subSkillId,
+      });
+  };
+
+  const handleConfirmDelete = () => {
+      if (!itemToDelete) return;
+
+      if (itemToDelete.type === 'skill') {
+          deleteSkill(itemToDelete.categoryId, itemToDelete.skillId);
+      } else if (itemToDelete.type === 'subskill' && itemToDelete.subSkillId) {
+          deleteSubSkill(itemToDelete.categoryId, itemToDelete.skillId, itemToDelete.subSkillId);
+      }
+      setItemToDelete(null);
+  };
 
   return (
     <div className="space-y-12">
@@ -272,7 +317,13 @@ const SkillsDashboard: React.FC = () => {
           <div className="space-y-4">
              {mainCategory.skills.length > 0 ? (
                 mainCategory.skills.map(skill => (
-                  <SkillItem key={skill.id} categoryId={mainCategory.id} skill={skill} />
+                  <SkillItem 
+                    key={skill.id} 
+                    categoryId={mainCategory.id} 
+                    skill={skill} 
+                    onRequestDeleteSkill={handleRequestDeleteSkill}
+                    onRequestDeleteSubSkill={handleRequestDeleteSubSkill}
+                  />
                 ))
              ) : (
                 <div className="text-center py-10 px-6 bg-wenge/30 rounded-lg border-2 border-dashed border-wenge/50">
@@ -296,6 +347,29 @@ const SkillsDashboard: React.FC = () => {
             )}
           </div>
         </section>
+
+        {itemToDelete && (
+            <ConfirmationModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title={`Excluir ${itemToDelete.type === 'skill' ? 'Habilidade' : 'Sub-habilidade'}`}
+            >
+                <p>
+                    Tem certeza que deseja excluir <strong>"{itemToDelete.name}"</strong>?
+                </p>
+                {itemToDelete.type === 'skill' && (
+                    <p className="mt-2 text-sm text-bone/70">
+                        Todas as sub-habilidades associadas também serão removidas. Esta ação não pode ser desfeita.
+                    </p>
+                )}
+                 {itemToDelete.type !== 'skill' && (
+                    <p className="mt-2 text-sm text-bone/70">
+                        Esta ação não pode ser desfeita.
+                    </p>
+                )}
+            </ConfirmationModal>
+        )}
     </div>
   );
 };

@@ -15,6 +15,7 @@ interface SkatingDataContextType {
   deleteSubSkill: (categoryId: string, skillId: string, subSkillId: string) => void;
   addSkillFromShop: (skillToAdd: Skill) => void;
   addSkillToShop: (skillName: string) => void;
+  deleteSkillFromShop: (skillId: string) => void;
 }
 
 const SkatingDataContext = createContext<SkatingDataContextType | undefined>(undefined);
@@ -175,43 +176,56 @@ export const SkatingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, []);
   
   const deleteSkill = useCallback((categoryId: string, skillId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta habilidade e todas as suas sub-habilidades? Esta ação não pode ser desfeita.')) {
-      setUserSkillsData(prevData =>
-        prevData.map(category => {
-          if (category.id === categoryId) {
-            return {
-              ...category,
-              skills: category.skills.filter(skill => skill.id !== skillId),
-            };
-          }
-          return category;
-        })
-      );
-    }
+    setUserSkillsData(prevData =>
+      prevData.map(category => {
+        if (category.id === categoryId) {
+          return {
+            ...category,
+            skills: category.skills.filter(skill => skill.id !== skillId),
+          };
+        }
+        return category;
+      })
+    );
   }, []);
 
   const deleteSubSkill = useCallback((categoryId: string, skillId: string, subSkillId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta sub-habilidade? Esta ação não pode ser desfeita.')) {
-      setUserSkillsData(prevData =>
-        prevData.map(category => {
-          if (category.id === categoryId) {
-            return {
-              ...category,
-              skills: category.skills.map(skill => {
-                if (skill.id === skillId) {
-                  return {
-                    ...skill,
-                    subSkills: skill.subSkills.filter(subSkill => subSkill.id !== subSkillId),
-                  };
-                }
-                return skill;
-              }),
-            };
-          }
-          return category;
-        })
-      );
-    }
+    setUserSkillsData(prevData =>
+      prevData.map(category => {
+        if (category.id === categoryId) {
+          return {
+            ...category,
+            skills: category.skills.map(skill => {
+              if (skill.id === skillId) {
+                return {
+                  ...skill,
+                  subSkills: skill.subSkills.filter(subSkill => subSkill.id !== subSkillId),
+                };
+              }
+              return skill;
+            }),
+          };
+        }
+        return category;
+      })
+    );
+  }, []);
+  
+  const deleteSkillFromShop = useCallback((skillId: string) => {
+    // Remove from available skills (shop)
+    setAvailableSkillsData(prevData =>
+      prevData.map(category => ({
+        ...category,
+        skills: category.skills.filter(skill => skill.id !== skillId),
+      }))
+    );
+    // Also remove from user skills to maintain consistency
+    setUserSkillsData(prevData =>
+      prevData.map(category => ({
+        ...category,
+        skills: category.skills.filter(skill => skill.id !== skillId),
+      }))
+    );
   }, []);
 
   const contextValue = {
@@ -227,6 +241,7 @@ export const SkatingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     deleteSubSkill,
     addSkillFromShop,
     addSkillToShop,
+    deleteSkillFromShop,
   };
 
   return (

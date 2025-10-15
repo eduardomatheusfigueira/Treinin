@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSkatingData } from '../context/SkatingDataContext';
 import { Skill } from '../types';
-import { PlusIcon } from '../components/Icons';
+import { PlusIcon, TrashIcon } from '../components/Icons';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const InlineAddForm: React.FC<{
   placeholder: string;
@@ -39,8 +40,9 @@ const InlineAddForm: React.FC<{
 
 
 const SkillShop: React.FC = () => {
-  const { availableSkillsData, userSkillsData, addSkillFromShop, addSkillToShop } = useSkatingData();
+  const { availableSkillsData, userSkillsData, addSkillFromShop, addSkillToShop, deleteSkillFromShop } = useSkatingData();
   const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [skillToDelete, setSkillToDelete] = useState<Skill | null>(null);
 
   const userSkillIds = useMemo(() => {
     const ids = new Set<string>();
@@ -52,6 +54,13 @@ const SkillShop: React.FC = () => {
 
   // Assuming availableSkillsData also follows the same single-category structure for simplicity
   const availableSkillsCategory = availableSkillsData[0];
+
+  const handleConfirmDelete = () => {
+    if (skillToDelete) {
+        deleteSkillFromShop(skillToDelete.id);
+        setSkillToDelete(null);
+    }
+  };
 
   return (
     <div className="space-y-12">
@@ -93,7 +102,16 @@ const SkillShop: React.FC = () => {
             return (
               <div key={skill.id} className="bg-wenge/80 rounded-xl border border-raisin-black/50 p-6 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-isabelline mb-2">{skill.name}</h3>
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-xl font-bold text-isabelline mb-2 pr-2">{skill.name}</h3>
+                     <button
+                        onClick={() => setSkillToDelete(skill)}
+                        className="text-bone/50 hover:text-bone transition-colors p-1 flex-shrink-0"
+                        aria-label={`Excluir ${skill.name} da loja`}
+                    >
+                        <TrashIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                   <ul className="space-y-1 pl-4 list-disc text-bone/70 mb-4">
                     {skill.subSkills.slice(0, 4).map(sub => (
                       <li key={sub.id}>{sub.name}</li>
@@ -118,6 +136,22 @@ const SkillShop: React.FC = () => {
           })}
         </div>
       </section>
+
+      {skillToDelete && (
+        <ConfirmationModal
+            isOpen={!!skillToDelete}
+            onClose={() => setSkillToDelete(null)}
+            onConfirm={handleConfirmDelete}
+            title="Excluir Habilidade da Loja"
+        >
+            <p>
+                Tem certeza que deseja excluir permanentemente <strong>"{skillToDelete.name}"</strong>?
+            </p>
+            <p className="mt-2 text-sm text-bone/70">
+                Esta ação removerá a habilidade do catálogo e também do seu painel de habilidades, caso já tenha sido adicionada. Esta ação não pode ser desfeita.
+            </p>
+        </ConfirmationModal>
+      )}
     </div>
   );
 };
