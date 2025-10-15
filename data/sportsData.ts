@@ -1,9 +1,9 @@
-import { SkillCategory, TrainingSession } from '../types';
+import { Sport, TrainingSession } from '../types';
 
-export const initialSkatingData: SkillCategory[] = [
+export const initialSportsData: Sport[] = [
   {
-    id: 'cat-main',
-    name: 'Minhas Habilidades',
+    id: 'sport-1',
+    name: 'Patinação',
     skills: [
       // Iniciante
       {
@@ -91,6 +91,38 @@ export const initialSkatingData: SkillCategory[] = [
            { id: 'sub-10-2', name: 'Backflip', progress: 0, description: '', progression: '', youtubeLinks: [] },
         ],
       },
+    ]
+  },
+  {
+    id: 'sport-2',
+    name: 'Calistenia',
+    skills: [
+        {
+            id: 'skill-11',
+            name: 'Barra',
+            subSkills: [
+              { id: 'sub-11-1', name: 'Barra Comando', progress: 0, description: '', progression: '', youtubeLinks: [] },
+              { id: 'sub-11-2', name: 'Barra Pronada', progress: 0, description: '', progression: '', youtubeLinks: [] },
+              { id: 'sub-11-3', name: 'Barra Supinada', progress: 0, description: '', progression: '', youtubeLinks: [] },
+            ],
+        },
+        {
+            id: 'skill-12',
+            name: 'Flexão',
+            subSkills: [
+              { id: 'sub-12-1', name: 'Tradicional', progress: 0, description: '', progression: '', youtubeLinks: [] },
+              { id: 'sub-12-2', name: 'Diamante', progress: 0, description: '', progression: '', youtubeLinks: [] },
+            ],
+        },
+        {
+            id: 'skill-13',
+            name: 'Abdominal',
+            subSkills: [
+              { id: 'sub-13-1', name: 'Canoinha', progress: 0, description: '', progression: '', youtubeLinks: [] },
+              { id: 'sub-13-2', name: 'Remador', progress: 0, description: '', progression: '', youtubeLinks: [] },
+              { id: 'sub-13-3', name: 'V-up', progress: 0, description: '', progression: '', youtubeLinks: [] },
+            ],
+        },
     ]
   }
 ];

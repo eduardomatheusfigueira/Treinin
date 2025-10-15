@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useSkatingData } from '../context/SkatingDataContext';
+import { useAppData } from '../context/AppContext';
 import ProgressBar from '../components/ProgressBar';
 import { ChevronDownIcon, SparklesIcon, PlusIcon, TrashIcon, BookOpenIcon } from '../components/Icons';
-import { Skill, SubSkill } from '../types';
+import { Skill, SubSkill, Sport } from '../types';
 import Modal from '../components/Modal';
 import { getSkillTips } from '../services/geminiService';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -17,7 +17,7 @@ interface SkillDetailModalProps {
 type ItemToDelete = {
     type: 'skill' | 'subskill';
     name: string;
-    categoryId: string;
+    sportId: string;
     skillId: string;
     subSkillId?: string;
 };
@@ -145,13 +145,13 @@ const SubSkillItem: React.FC<{ subSkill: SubSkill, onUpdateProgress: (progress: 
 
 
 const SkillItem: React.FC<{ 
-    categoryId: string, 
+    sportId: string,
     skill: Skill,
     onRequestDeleteSkill: (skillId: string, skillName: string) => void,
     onRequestDeleteSubSkill: (skillId: string, subSkillId: string, subSkillName: string) => void
-}> = ({ categoryId, skill, onRequestDeleteSkill, onRequestDeleteSubSkill }) => {
+}> = ({ sportId, skill, onRequestDeleteSkill, onRequestDeleteSubSkill }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { updateSubSkill, addSubSkill } = useSkatingData();
+  const { updateSubSkill, addSubSkill } = useAppData();
   const [selectedSubSkill, setSelectedSubSkill] = useState<SubSkill | null>(null);
   const [isAddingSubSkill, setIsAddingSubSkill] = useState(false);
 
@@ -162,15 +162,15 @@ const SkillItem: React.FC<{
   }, [skill.subSkills]);
 
   const handleUpdateProgress = useCallback((subSkillId: string, progress: number) => {
-    updateSubSkill(categoryId, skill.id, subSkillId, { progress });
-  }, [categoryId, skill.id, updateSubSkill]);
+    updateSubSkill(sportId, skill.id, subSkillId, { progress });
+  }, [sportId, skill.id, updateSubSkill]);
 
   const handleUpdateSubSkillDetails = useCallback((updates: Partial<SubSkill>) => {
     if (selectedSubSkill) {
-      updateSubSkill(categoryId, skill.id, selectedSubSkill.id, updates);
+      updateSubSkill(sportId, skill.id, selectedSubSkill.id, updates);
       setSelectedSubSkill(prev => prev ? { ...prev, ...updates } : null);
     }
-  }, [categoryId, skill.id, updateSubSkill, selectedSubSkill]);
+  }, [sportId, skill.id, updateSubSkill, selectedSubSkill]);
   
   const handleDeleteSkill = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -222,7 +222,7 @@ const SkillItem: React.FC<{
                 <InlineAddForm
                   placeholder="Nome da nova sub-habilidade"
                   onSave={(name) => {
-                    addSubSkill(categoryId, skill.id, name);
+                    addSubSkill(sportId, skill.id, name);
                     setIsAddingSubSkill(false);
                   }}
                   onCancel={() => setIsAddingSubSkill(false)}
@@ -249,32 +249,51 @@ const SkillItem: React.FC<{
   );
 };
 
+const SportTab: React.FC<{ sport: Sport, isActive: boolean, onClick: () => void }> = ({ sport, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-2 text-lg font-semibold rounded-t-lg transition-colors ${
+            isActive
+                ? 'bg-wenge/80 text-bone border-b-4 border-bone'
+                : 'text-wenge/70 hover:bg-wenge/20'
+        }`}
+    >
+        {sport.name}
+    </button>
+);
 
 const SkillsDashboard: React.FC = () => {
-  const { userSkillsData, addCustomSkill, deleteSkill, deleteSubSkill } = useSkatingData();
-  const [addingSkillToCategory, setAddingSkillToCategory] = useState<string | null>(null);
+  const { userSportsData, addCustomSkill, deleteSkill, deleteSubSkill } = useAppData();
+  const [addingSkillToSport, setAddingSkillToSport] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<ItemToDelete | null>(null);
-  
-  if (!userSkillsData || userSkillsData.length === 0) {
+  const [activeSportId, setActiveSportId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userSportsData.length > 0 && !activeSportId) {
+      setActiveSportId(userSportsData[0].id);
+    }
+  }, [userSportsData, activeSportId]);
+
+  if (!userSportsData || userSportsData.length === 0) {
     return <div>Carregando...</div>
   }
 
-  const mainCategory = userSkillsData[0];
+  const activeSport = userSportsData.find(s => s.id === activeSportId);
 
-  const handleRequestDeleteSkill = (skillId: string, skillName: string) => {
+  const handleRequestDeleteSkill = (sportId: string, skillId: string, skillName: string) => {
     setItemToDelete({
         type: 'skill',
         name: skillName,
-        categoryId: mainCategory.id,
+        sportId: sportId,
         skillId: skillId,
     });
   };
 
-  const handleRequestDeleteSubSkill = (skillId: string, subSkillId: string, subSkillName: string) => {
+  const handleRequestDeleteSubSkill = (sportId: string, skillId: string, subSkillId: string, subSkillName: string) => {
       setItemToDelete({
           type: 'subskill',
           name: subSkillName,
-          categoryId: mainCategory.id,
+          sportId: sportId,
           skillId: skillId,
           subSkillId: subSkillId,
       });
@@ -284,9 +303,9 @@ const SkillsDashboard: React.FC = () => {
       if (!itemToDelete) return;
 
       if (itemToDelete.type === 'skill') {
-          deleteSkill(itemToDelete.categoryId, itemToDelete.skillId);
+          deleteSkill(itemToDelete.sportId, itemToDelete.skillId);
       } else if (itemToDelete.type === 'subskill' && itemToDelete.subSkillId) {
-          deleteSubSkill(itemToDelete.categoryId, itemToDelete.skillId, itemToDelete.subSkillId);
+          deleteSubSkill(itemToDelete.sportId, itemToDelete.skillId, itemToDelete.subSkillId);
       }
       setItemToDelete(null);
   };
@@ -300,53 +319,68 @@ const SkillsDashboard: React.FC = () => {
           <span>Explorar Habilidades</span>
         </Link>
       </div>
-      
-      <section key={mainCategory.id}>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold text-wenge border-b-2 border-wenge/30 pb-2 flex-grow">{mainCategory.name}</h2>
-            <button
-                onClick={() => setAddingSkillToCategory(mainCategory.id === addingSkillToCategory ? null : mainCategory.id)}
-                className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 text-sm bg-wenge/80 text-bone rounded-lg hover:bg-wenge transition-colors w-full sm:w-auto"
-                aria-label={`Adicionar nova habilidade personalizada`}
-            >
-                <PlusIcon className="w-5 h-5" />
-                <span>Nova Habilidade (Personalizada)</span>
-            </button>
-          </div>
 
-          <div className="space-y-4">
-             {mainCategory.skills.length > 0 ? (
-                mainCategory.skills.map(skill => (
-                  <SkillItem 
-                    key={skill.id} 
-                    categoryId={mainCategory.id} 
-                    skill={skill} 
-                    onRequestDeleteSkill={handleRequestDeleteSkill}
-                    onRequestDeleteSubSkill={handleRequestDeleteSubSkill}
+      <div className="border-b border-wenge/30">
+          {userSportsData.map(sport => (
+              <SportTab
+                  key={sport.id}
+                  sport={sport}
+                  isActive={activeSportId === sport.id}
+                  onClick={() => setActiveSportId(sport.id)}
+              />
+          ))}
+      </div>
+      
+      {activeSport ? (
+        <section key={activeSport.id}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold text-wenge border-b-2 border-wenge/30 pb-2 flex-grow">{activeSport.name}</h2>
+              <button
+                  onClick={() => setAddingSkillToSport(activeSport.id === addingSkillToSport ? null : activeSport.id)}
+                  className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 text-sm bg-wenge/80 text-bone rounded-lg hover:bg-wenge transition-colors w-full sm:w-auto"
+                  aria-label={`Adicionar nova habilidade personalizada`}
+              >
+                  <PlusIcon className="w-5 h-5" />
+                  <span>Nova Habilidade (Personalizada)</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {activeSport.skills.length > 0 ? (
+                  activeSport.skills.map(skill => (
+                    <SkillItem
+                      key={skill.id}
+                      sportId={activeSport.id}
+                      skill={skill}
+                      onRequestDeleteSkill={(skillId, name) => handleRequestDeleteSkill(activeSport.id, skillId, name)}
+                      onRequestDeleteSubSkill={(skillId, subId, name) => handleRequestDeleteSubSkill(activeSport.id, skillId, subId, name)}
+                    />
+                  ))
+              ) : (
+                  <div className="text-center py-10 px-6 bg-wenge/30 rounded-lg border-2 border-dashed border-wenge/50">
+                      <h3 className="text-xl font-semibold text-wenge">Seu painel de habilidades para {activeSport.name} está vazio!</h3>
+                      <p className="text-onyx/80 mt-2 mb-4">Comece explorando o nosso catálogo de habilidades e adicione as que você quer treinar.</p>
+                      <Link to="/skill-shop" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-raisin-black text-bone font-semibold rounded-lg hover:bg-onyx transition-colors shadow-lg shadow-onyx/20">
+                          <BookOpenIcon className="w-5 h-5" />
+                          <span>Ir para a Loja de Habilidades</span>
+                      </Link>
+                  </div>
+              )}
+              {addingSkillToSport === activeSport.id && (
+                  <InlineAddForm
+                  placeholder="Nome da nova habilidade personalizada"
+                  onSave={(name) => {
+                      addCustomSkill(activeSport.id, name);
+                      setAddingSkillToSport(null);
+                  }}
+                  onCancel={() => setAddingSkillToSport(null)}
                   />
-                ))
-             ) : (
-                <div className="text-center py-10 px-6 bg-wenge/30 rounded-lg border-2 border-dashed border-wenge/50">
-                    <h3 className="text-xl font-semibold text-wenge">Seu painel de habilidades está vazio!</h3>
-                    <p className="text-onyx/80 mt-2 mb-4">Comece explorando o nosso catálogo de habilidades e adicione as que você quer treinar.</p>
-                    <Link to="/skill-shop" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-raisin-black text-bone font-semibold rounded-lg hover:bg-onyx transition-colors shadow-lg shadow-onyx/20">
-                        <BookOpenIcon className="w-5 h-5" />
-                        <span>Ir para a Loja de Habilidades</span>
-                    </Link>
-                </div>
-             )}
-            {addingSkillToCategory === mainCategory.id && (
-                <InlineAddForm
-                placeholder="Nome da nova habilidade personalizada"
-                onSave={(name) => {
-                    addCustomSkill(mainCategory.id, name);
-                    setAddingSkillToCategory(null);
-                }}
-                onCancel={() => setAddingSkillToCategory(null)}
-                />
-            )}
-          </div>
+              )}
+            </div>
         </section>
+      ) : (
+        <div>Selecione um esporte.</div>
+      )}
 
         {itemToDelete && (
             <ConfirmationModal

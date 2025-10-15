@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useSkatingData } from '../context/SkatingDataContext';
+import { useAppData } from '../context/AppContext';
 import { TrainingSession, TrainingExercise } from '../types';
 import Modal from '../components/Modal';
 
@@ -47,7 +47,7 @@ const YoutubeLinkManager: React.FC<{
 
 
 const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSession}> = ({ onClose }) => {
-    const { addTrainingSession, userSkillsData } = useSkatingData();
+    const { addTrainingSession, userSportsData } = useAppData();
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [duration, setDuration] = useState(60);
@@ -56,16 +56,16 @@ const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSess
 
     const skillOptions = useMemo(() => {
         const options: { label: string; value: string }[] = [{ label: 'Exercício Personalizado', value: 'custom' }];
-        userSkillsData.forEach(cat => {
-            cat.skills.forEach(skill => {
-                options.push({ label: `Habilidade: ${skill.name}`, value: `skill:${skill.id}`});
+        userSportsData.forEach(sport => {
+            sport.skills.forEach(skill => {
+                options.push({ label: `Habilidade: ${skill.name} (${sport.name})`, value: `skill:${skill.id}`});
                 skill.subSkills.forEach(sub => {
-                    options.push({ label: `  - ${sub.name}`, value: `subskill:${sub.id}:${skill.id}` });
+                    options.push({ label: `  - ${sub.name} (${sport.name})`, value: `subskill:${sub.id}:${skill.id}` });
                 });
             });
         });
         return options;
-    }, [userSkillsData]);
+    }, [userSportsData]);
 
     const handleAddExercise = () => {
         setExercises([...exercises, { id: `ex-${Date.now()}`, customName: '', youtubeLinks: [] }]);
@@ -290,7 +290,7 @@ const CompleteSessionModal: React.FC<{
 
 
 const TrainingPlanner: React.FC = () => {
-    const { trainingData, updateTrainingSession, deleteTrainingSession, userSkillsData } = useSkatingData();
+    const { trainingData, updateTrainingSession, deleteTrainingSession, userSportsData } = useAppData();
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [sessionToComplete, setSessionToComplete] = useState<TrainingSession | null>(null);
 
@@ -310,8 +310,8 @@ const TrainingPlanner: React.FC = () => {
 
     const getExerciseName = (exercise: TrainingExercise): string => {
         if (exercise.customName) return exercise.customName;
-        for (const cat of userSkillsData) {
-            for (const skill of cat.skills) {
+        for (const sport of userSportsData) {
+            for (const skill of sport.skills) {
                 if (skill.id === exercise.skillId && !exercise.subSkillId) return skill.name;
                 const subSkill = skill.subSkills.find(s => s.id === exercise.subSkillId);
                 if (subSkill) return subSkill.name;
