@@ -290,7 +290,7 @@ const CompleteSessionModal: React.FC<{
 
 
 const TrainingPlanner: React.FC = () => {
-    const { trainingData, updateTrainingSession, userSkillsData } = useSkatingData();
+    const { trainingData, updateTrainingSession, deleteTrainingSession, userSkillsData } = useSkatingData();
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [sessionToComplete, setSessionToComplete] = useState<TrainingSession | null>(null);
 
@@ -300,6 +300,12 @@ const TrainingPlanner: React.FC = () => {
     const handleMarkComplete = (sessionId: string, performance: 'Bom' | 'Ok' | 'Ruim', notes: string) => {
         updateTrainingSession(sessionId, { isCompleted: true, performance, notes: notes || '' });
         setSessionToComplete(null);
+    };
+
+    const handleDelete = (sessionId: string) => {
+        if (window.confirm('Tem certeza de que deseja excluir esta sessão de treino? Esta ação não pode ser desfeita.')) {
+            deleteTrainingSession(sessionId);
+        }
     };
 
     const getExerciseName = (exercise: TrainingExercise): string => {
@@ -366,7 +372,12 @@ const TrainingPlanner: React.FC = () => {
                                         ))}
                                     </ul>
                                 </div>
-                                <button onClick={() => setSessionToComplete(session)} className="w-full mt-4 px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Marcar como Concluída</button>
+                                <div className="flex gap-2 mt-4">
+                                    <button onClick={() => setSessionToComplete(session)} className="w-full px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Marcar como Concluída</button>
+                                    <button onClick={() => handleDelete(session.id)} className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -382,17 +393,22 @@ const TrainingPlanner: React.FC = () => {
                         {completedSessions.map(session => (
                             <details key={session.id} className="bg-wenge/80 rounded-xl border border-raisin-black overflow-hidden">
                                 <summary className="p-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between cursor-pointer">
-                                    <div>
+                                    <div className="flex-grow">
                                        <h3 className="text-xl font-bold text-isabelline">{session.title}</h3>
                                        <p className="text-bone/70">{new Date(session.date  + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
                                     </div>
-                                   <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                       session.performance === 'Bom' ? 'bg-bone text-raisin-black' :
-                                       session.performance === 'Ok' ? 'bg-onyx/80 text-bone' :
-                                       'bg-raisin-black/80 text-bone/80'
-                                   }`}>
-                                       {session.performance}
-                                   </div>
+                                    <div className="flex items-center gap-3">
+                                       <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                           session.performance === 'Bom' ? 'bg-bone text-raisin-black' :
+                                           session.performance === 'Ok' ? 'bg-onyx/80 text-bone' :
+                                           'bg-raisin-black/80 text-bone/80'
+                                       }`}>
+                                           {session.performance}
+                                       </div>
+                                       <button onClick={(e) => { e.preventDefault(); handleDelete(session.id); }} className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/20 rounded-full transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                                       </button>
+                                    </div>
                                 </summary>
                                 <div className="px-6 pb-6 border-t border-raisin-black">
                                     <p className="text-isabelline/90 mt-4 break-words"><span className="font-semibold text-isabelline">Anotações:</span> {session.notes || "Sem anotações."}</p>
