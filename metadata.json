@@ -1,0 +1,5 @@
+{
+  "name": "Inline Skating Skill Tracker",
+  "description": "An application to track your inline skating skills, progress, and training sessions. Plan your workouts, log your history, and get AI-powered tips to improve.",
+  "requestFramePermissions": []
+}
