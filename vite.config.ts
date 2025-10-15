@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_MESSAGING_SENDER_ID': JSON.stringify(env.VITE_MESSAGING_SENDER_ID),
       'process.env.VITE_APP_ID': JSON.stringify(env.VITE_APP_ID),
       'process.env.VITE_MEASUREMENT_ID': JSON.stringify(env.VITE_MEASUREMENT_ID),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
     resolve: {
       alias: {
