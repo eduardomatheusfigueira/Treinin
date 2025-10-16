@@ -63,7 +63,7 @@ const SkillShop: React.FC = () => {
     if (availableSportsData.length > 0 && !activeSportId) {
       setActiveSportId(availableSportsData[0].id);
     }
-  }, [availableSportsData, activeSportId]);
+  }, [availableSportsData, activeSportId, setActiveSportId]);
 
   const userSkillIds = useMemo(() => {
     const ids = new Set<string>();
