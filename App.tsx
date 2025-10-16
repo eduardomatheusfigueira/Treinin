@@ -6,6 +6,7 @@ import MainLayout from './components/MainLayout';
 import SkillsDashboard from './pages/SkillsDashboard';
 import TrainingPlanner from './pages/TrainingPlanner';
 import SkillShop from './pages/SkillShop';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -25,6 +26,7 @@ const App: React.FC = () => {
                       <Route path="/" element={<SkillsDashboard />} />
                       <Route path="/training" element={<TrainingPlanner />} />
                       <Route path="/skill-shop" element={<SkillShop />} />
+                      <Route path="/profile" element={<Profile />} />
                     </Routes>
                   </MainLayout>
                 </AppProvider>
