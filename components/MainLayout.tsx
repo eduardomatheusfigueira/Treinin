@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { SkatesIcon, CalendarIcon, BookOpenIcon, LogOutIcon } from './Icons';
+import { SkatesIcon, CalendarIcon, BookOpenIcon, LogOutIcon, UserIcon } from './Icons';
 import { useAuth } from '../context/AuthContext';
 
 const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -48,6 +48,17 @@ const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
               >
                 <CalendarIcon className="h-6 w-6" />
                 <span className="hidden md:inline font-medium">Treinos</span>
+              </NavLink>
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                    isActive ? 'bg-onyx text-bone' : 'text-bone/70 hover:bg-onyx/80 hover:text-bone'
+                  }`
+                }
+              >
+                <UserIcon className="h-6 w-6" />
+                <span className="hidden md:inline font-medium">Perfil</span>
               </NavLink>
             </nav>
           )}
