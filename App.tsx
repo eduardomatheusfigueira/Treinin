@@ -9,11 +9,14 @@ import SkillShop from './pages/SkillShop';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const App: React.FC = () => {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   return (
-    <AuthProvider>
-      <HashRouter>
+    <GoogleOAuthProvider clientId={clientId}>
+      <AuthProvider>
+        <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
@@ -34,8 +37,9 @@ const App: React.FC = () => {
             }
           />
         </Routes>
-      </HashRouter>
-    </AuthProvider>
+        </HashRouter>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 };
 

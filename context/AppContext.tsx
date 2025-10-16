@@ -20,8 +20,6 @@ interface AppContextType {
   addSkillToShop: (sportId: string, skillName: string) => void;
   deleteSkillFromShop: (sportId: string, skillId: string) => void;
   addSport: (sportName: string) => void;
-  uncompleteTrainingSession: (sessionId: string) => void;
-  duplicateTrainingSession: (session: TrainingSession) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -113,26 +111,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteTrainingSession = useCallback((sessionId: string) => {
     setTrainingData(prev => prev.filter(session => session.id !== sessionId));
-  }, []);
-
-  const uncompleteTrainingSession = useCallback((sessionId: string) => {
-    updateTrainingSession(sessionId, {
-      isCompleted: false,
-      performance: null,
-      notes: '',
-    });
-  }, []);
-
-  const duplicateTrainingSession = useCallback((session: TrainingSession) => {
-    const newSession = JSON.parse(JSON.stringify(session));
-
-    newSession.id = `session-${Date.now()}`;
-    newSession.isCompleted = false;
-    newSession.performance = null;
-    newSession.notes = '';
-    newSession.date = session.date;
-
-    addTrainingSession(newSession);
   }, []);
 
   const addSkillToShop = useCallback((sportId: string, skillName: string) => {
@@ -340,8 +318,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addSkillToShop,
     deleteSkillFromShop,
     addSport,
-    uncompleteTrainingSession,
-    duplicateTrainingSession,
   };
 
   return (

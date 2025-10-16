@@ -369,13 +369,17 @@ const CompleteSessionModal: React.FC<{
 };
 
 
-import { UndoIcon, DuplicateIcon } from '../components/Icons';
+import { CalendarPlusIcon } from '../components/Icons';
+import { useGoogleLogin } from '@react-oauth/google';
+import Cookies from 'js-cookie';
+import { createGoogleCalendarEvent } from '../services/googleCalendarService';
 
 const TrainingPlanner: React.FC = () => {
-    const { trainingData, updateTrainingSession, deleteTrainingSession, userSportsData, uncompleteTrainingSession, duplicateTrainingSession } = useAppData();
+    const { trainingData, updateTrainingSession, deleteTrainingSession, userSportsData } = useAppData();
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [sessionToEdit, setSessionToEdit] = useState<TrainingSession | null>(null);
     const [sessionToComplete, setSessionToComplete] = useState<TrainingSession | null>(null);
+    const [accessToken, setAccessToken] = useState<string | null>(Cookies.get('google_access_token') || null);
 
     const plannedSessions = trainingData.filter(s => !s.isCompleted).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const completedSessions = trainingData.filter(s => s.isCompleted).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -416,6 +420,43 @@ const TrainingPlanner: React.FC = () => {
         return date.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     };
 
+    const login = useGoogleLogin({
+        onSuccess: (tokenResponse) => {
+            Cookies.set('google_access_token', tokenResponse.access_token, { expires: 1, path: '/' });
+            setAccessToken(tokenResponse.access_token);
+        },
+        onError: (err) => {
+            console.error('Login Failed:', err);
+        },
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+    });
+
+    const handleAddToCalendar = async (session: TrainingSession) => {
+        if (!accessToken) {
+            login();
+        } else {
+            const event = {
+                'summary': session.title,
+                'description': `Treino de ${session.duration} minutos.`,
+                'start': {
+                    'dateTime': `${session.date}T${session.time || '10:00'}:00`,
+                    'timeZone': 'America/Sao_Paulo',
+                },
+                'end': {
+                    'dateTime': new Date(new Date(`${session.date}T${session.time || '10:00'}:00`).getTime() + session.duration * 60000).toISOString(),
+                    'timeZone': 'America/Sao_Paulo',
+                },
+            };
+            try {
+                await createGoogleCalendarEvent(accessToken, event);
+                alert('Evento adicionado ao Google Calendar!');
+            } catch (error) {
+                console.error("Erro ao criar evento no Google Calendar: ", error);
+                alert('Falha ao adicionar evento ao Google Calendar.');
+            }
+        }
+    };
+
     return (
         <div className="space-y-12">
             <div className="flex flex-col gap-4 items-start sm:flex-row sm:items-center sm:justify-between">
@@ -433,7 +474,7 @@ const TrainingPlanner: React.FC = () => {
                             <div key={session.id} className="bg-wenge/80 p-6 rounded-xl border border-raisin-black flex flex-col justify-between">
                                 <div>
                                     <h3 className="text-xl font-bold text-isabelline">{session.title}</h3>
-                                    <p className="text-bone/70">{formatDate(session.date)} {session.time && `- ${session.time}`}</p>
+                                    <p className="text-bone/70">{formatDate(session.date)}</p>
                                     <p className="text-bone/70 mb-4">{session.duration} minutos</p>
                                     {session.youtubeLinks && session.youtubeLinks.length > 0 && (
                                         <div className="mb-4">
@@ -461,8 +502,8 @@ const TrainingPlanner: React.FC = () => {
                                 </div>
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setSessionToComplete(session)} className="w-full px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Marcar como Concluída</button>
-                                    <button onClick={() => duplicateTrainingSession(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Duplicar Treino">
-                                        <DuplicateIcon className="h-5 w-5" />
+                                    <button onClick={() => handleAddToCalendar(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Adicionar ao Google Calendar">
+                                        <CalendarPlusIcon className="h-5 w-5" />
                                     </button>
                                     <button onClick={() => setSessionToEdit(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Editar Treino">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
@@ -498,16 +539,10 @@ const TrainingPlanner: React.FC = () => {
                                        }`}>
                                            {session.performance}
                                        </div>
-                                       <button onClick={(e) => { e.preventDefault(); uncompleteTrainingSession(session.id); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors" title="Desfazer Conclusão">
-                                            <UndoIcon className="h-5 w-5" />
-                                       </button>
-                                       <button onClick={(e) => { e.preventDefault(); duplicateTrainingSession(session); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors" title="Duplicar Treino">
-                                            <DuplicateIcon className="h-5 w-5" />
-                                       </button>
-                                       <button onClick={(e) => { e.preventDefault(); setSessionToEdit(session); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors" title="Editar Treino">
+                                       <button onClick={(e) => { e.preventDefault(); setSessionToEdit(session); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
                                        </button>
-                                       <button onClick={(e) => { e.preventDefault(); handleDelete(session.id); }} className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/20 rounded-full transition-colors" title="Excluir Treino">
+                                       <button onClick={(e) => { e.preventDefault(); handleDelete(session.id); }} className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/20 rounded-full transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
                                        </button>
                                     </div>
