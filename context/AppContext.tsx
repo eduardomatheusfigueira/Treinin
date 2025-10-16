@@ -52,7 +52,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         if (trainings) {
-          setTrainingData(trainings);
+          const migratedTrainings = trainings.map(t => {
+            if ('exercises' in t && !('sections' in t)) {
+              return {
+                ...t,
+                sections: [{
+                  id: `sec-${Date.now()}`,
+                  name: 'Exercícios Gerais',
+                  exercises: (t as any).exercises,
+                }]
+              };
+            }
+            return t;
+          });
+          setTrainingData(migratedTrainings);
         } else {
           setTrainingData(initialTrainingData);
         }
