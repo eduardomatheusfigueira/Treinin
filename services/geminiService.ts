@@ -1,13 +1,12 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export const getSkillTips = async (skillName: string): Promise<string> => {
+export const getSkillTips = async (skillName: string, sportName: string): Promise<string> => {
   try {
     const prompt = `
-      Você é um treinador especialista em patinação inline.
-      Forneça um guia conciso e útil para aprender a seguinte habilidade de patinação inline: "${skillName}".
+      Você é um treinador especialista em ${sportName}.
+      Forneça um guia conciso e útil para aprender a seguinte habilidade de ${sportName}: "${skillName}".
       Estruture sua resposta em três seções com títulos claros em português do Brasil:
       
       ### Detalhes da Técnica
