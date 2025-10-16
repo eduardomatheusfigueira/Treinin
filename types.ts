@@ -42,6 +42,7 @@ export interface TrainingSection {
 export interface TrainingSession {
   id: string;
   date: string;
+  time?: string;
   title: string;
   duration: number; // in minutes
   sections: TrainingSection[];
