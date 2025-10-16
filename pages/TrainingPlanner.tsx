@@ -53,7 +53,6 @@ const TrainingSessionForm: React.FC<{
     const { addTrainingSession, updateTrainingSession, userSportsData } = useAppData();
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [time, setTime] = useState('10:00');
     const [duration, setDuration] = useState(60);
     const [sections, setSections] = useState<TrainingSection[]>([]);
     const [sessionYoutubeLinks, setSessionYoutubeLinks] = useState<string[]>([]);
@@ -62,7 +61,6 @@ const TrainingSessionForm: React.FC<{
         if (session) {
             setTitle(session.title);
             setDate(session.date);
-            setTime(session.time || '10:00');
             setDuration(session.duration);
             setSections(session.sections);
             setSessionYoutubeLinks(session.youtubeLinks || []);
@@ -139,7 +137,6 @@ const TrainingSessionForm: React.FC<{
         const sessionData = {
             title,
             date,
-            time,
             duration,
             sections,
             youtubeLinks: sessionYoutubeLinks,
@@ -172,27 +169,15 @@ const TrainingSessionForm: React.FC<{
                     required
                 />
             </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-bone/80 mb-1">Data</label>
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full p-2 bg-raisin-black border border-onyx rounded-lg focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
-                        required
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-bone/80 mb-1">Horário</label>
-                    <input
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        className="w-full p-2 bg-raisin-black border border-onyx rounded-lg focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
-                        required
-                    />
-                </div>
+             <div>
+                <label className="block text-sm font-medium text-bone/80 mb-1">Data</label>
+                <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full p-2 bg-raisin-black border border-onyx rounded-lg focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
+                    required
+                />
             </div>
              <div>
                 <label className="block text-sm font-medium text-bone/80 mb-1">Duração Total (minutos)</label>
