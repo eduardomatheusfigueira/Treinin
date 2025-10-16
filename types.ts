@@ -14,7 +14,7 @@ export interface Skill {
   subSkills: SubSkill[];
 }
 
-export interface Sport {
+export interface SkillCategory {
   id: string;
   name: string;
   skills: Skill[];
@@ -31,20 +31,12 @@ export interface TrainingExercise {
   youtubeLinks?: string[];
 }
 
-export interface TrainingSection {
-  id: string;
-  name: string;
-  duration?: number; // in minutes
-  reps?: number;
-  exercises: TrainingExercise[];
-}
-
 export interface TrainingSession {
   id: string;
   date: string;
   title: string;
   duration: number; // in minutes
-  sections: TrainingSection[];
+  exercises: TrainingExercise[];
   notes: string;
   performance: 'Bom' | 'Ok' | 'Ruim' | null;
   isCompleted: boolean;

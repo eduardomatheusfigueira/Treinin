@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { useAppData } from '../context/AppContext';
-import { TrainingSession, TrainingExercise, TrainingSection } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSkatingData } from '../context/SkatingDataContext';
+import { TrainingSession, TrainingExercise } from '../types';
 import Modal from '../components/Modal';
+import { PencilIcon } from '../components/Icons';
 
 const YoutubeLinkManager: React.FC<{
     links: string[];
@@ -46,56 +47,48 @@ const YoutubeLinkManager: React.FC<{
 }
 
 
-const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSession}> = ({ onClose }) => {
-    const { addTrainingSession, userSportsData } = useAppData();
+const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSession}> = ({ onClose, session }) => {
+    const { addTrainingSession, updateTrainingSession, userSkillsData } = useSkatingData();
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [duration, setDuration] = useState(60);
-    const [sections, setSections] = useState<TrainingSection[]>([]);
+    const [exercises, setExercises] = useState<TrainingExercise[]>([]);
     const [sessionYoutubeLinks, setSessionYoutubeLinks] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (session) {
+            setTitle(session.title);
+            setDate(session.date);
+            setDuration(session.duration);
+            setExercises(session.exercises);
+            setSessionYoutubeLinks(session.youtubeLinks || []);
+        }
+    }, [session]);
 
     const skillOptions = useMemo(() => {
         const options: { label: string; value: string }[] = [{ label: 'Exercício Personalizado', value: 'custom' }];
-        userSportsData.forEach(sport => {
-            sport.skills.forEach(skill => {
-                options.push({ label: `Habilidade: ${skill.name} (${sport.name})`, value: `skill:${skill.id}`});
+        userSkillsData.forEach(cat => {
+            cat.skills.forEach(skill => {
+                options.push({ label: `Habilidade: ${skill.name}`, value: `skill:${skill.id}`});
                 skill.subSkills.forEach(sub => {
-                    options.push({ label: `  - ${sub.name} (${sport.name})`, value: `subskill:${sub.id}:${skill.id}` });
+                    options.push({ label: `  - ${sub.name}`, value: `subskill:${sub.id}:${skill.id}` });
                 });
             });
         });
         return options;
-    }, [userSportsData]);
+    }, [userSkillsData]);
 
-    const handleAddSection = () => {
-        setSections([...sections, { id: `sec-${Date.now()}`, name: 'Nova Seção', exercises: [] }]);
+    const handleAddExercise = () => {
+        setExercises([...exercises, { id: `ex-${Date.now()}`, customName: '', youtubeLinks: [] }]);
     };
 
-    const handleRemoveSection = (index: number) => {
-        setSections(sections.filter((_, i) => i !== index));
+    const handleRemoveExercise = (index: number) => {
+        setExercises(exercises.filter((_, i) => i !== index));
     };
 
-    const handleSectionChange = (index: number, updates: Partial<TrainingSection>) => {
-        const newSections = [...sections];
-        newSections[index] = { ...newSections[index], ...updates };
-        setSections(newSections);
-    };
-
-    const handleAddExercise = (sectionIndex: number) => {
-        const newSections = [...sections];
-        newSections[sectionIndex].exercises.push({ id: `ex-${Date.now()}`, customName: '', youtubeLinks: [] });
-        setSections(newSections);
-    };
-
-    const handleRemoveExercise = (sectionIndex: number, exerciseIndex: number) => {
-        const newSections = [...sections];
-        newSections[sectionIndex].exercises = newSections[sectionIndex].exercises.filter((_, i) => i !== exerciseIndex);
-        setSections(newSections);
-    };
-
-    const handleExerciseChange = (sectionIndex: number, exerciseIndex: number, updates: Partial<TrainingExercise>) => {
-        const newSections = [...sections];
-        const exercise = { ...newSections[sectionIndex].exercises[exerciseIndex], ...updates };
+    const handleExerciseChange = (index: number, updates: Partial<TrainingExercise>) => {
+        const newExercises = [...exercises];
+        const exercise = { ...newExercises[index], ...updates };
 
         if ('skillSelection' in updates) {
             const selection = (updates as any).skillSelection as string;
@@ -115,24 +108,28 @@ const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSess
             }
         }
         
-        newSections[sectionIndex].exercises[exerciseIndex] = exercise;
-        setSections(newSections);
+        newExercises[index] = exercise;
+        setExercises(newExercises);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const newSession: TrainingSession = {
-            id: `session-${Date.now()}`,
+        const sessionData: Omit<TrainingSession, 'id'> = {
             title,
             date,
             duration,
-            sections,
-            notes: '',
-            performance: null,
-            isCompleted: false,
+            exercises,
+            notes: session?.notes || '',
+            performance: session?.performance || null,
+            isCompleted: session?.isCompleted || false,
             youtubeLinks: sessionYoutubeLinks,
         };
-        addTrainingSession(newSession);
+
+        if (session) {
+            updateTrainingSession(session.id, sessionData);
+        } else {
+            addTrainingSession({ ...sessionData, id: `session-${Date.now()}` });
+        }
         onClose();
     };
     
@@ -159,7 +156,7 @@ const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSess
                 />
             </div>
              <div>
-                <label className="block text-sm font-medium text-bone/80 mb-1">Duração Total (minutos)</label>
+                <label className="block text-sm font-medium text-bone/80 mb-1">Duração (minutos)</label>
                 <input
                     type="number"
                     value={duration}
@@ -179,84 +176,62 @@ const TrainingSessionForm: React.FC<{onClose: () => void, session?: TrainingSess
             </div>
 
             <div className="space-y-4 pt-2">
-                 <h3 className="text-lg font-semibold text-bone border-t border-raisin-black/50 pt-4">Seções de Treino</h3>
-                 {sections.map((section, sectionIndex) => (
-                    <div key={section.id} className="p-4 bg-wenge/50 rounded-lg space-y-3 border border-onyx/50">
-                        <div className="flex justify-between items-center">
-                            <input
-                                type="text"
-                                placeholder="Nome da Seção"
-                                value={section.name}
-                                onChange={(e) => handleSectionChange(sectionIndex, { name: e.target.value })}
-                                className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline font-semibold"
-                            />
-                            <button type="button" onClick={() => handleRemoveSection(sectionIndex)} className="ml-3 text-bone/70 hover:text-bone p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input type="number" placeholder="Duração da Seção (min)" value={section.duration || ''} onChange={e => handleSectionChange(sectionIndex, { duration: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
-                            <input type="number" placeholder="Repetições da Seção" value={section.reps || ''} onChange={e => handleSectionChange(sectionIndex, { reps: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
-                        </div>
+                 <h3 className="text-lg font-semibold text-bone border-t border-raisin-black/50 pt-4">Exercícios</h3>
+                 {exercises.map((ex, index) => {
+                     const isCustom = !ex.skillId && !ex.subSkillId;
+                     let selectValue = 'custom';
+                     if (ex.subSkillId && ex.skillId) selectValue = `subskill:${ex.subSkillId}:${ex.skillId}`;
+                     else if (ex.skillId) selectValue = `skill:${ex.skillId}`;
 
-                        {section.exercises.map((ex, exerciseIndex) => {
-                            const isCustom = !ex.skillId && !ex.subSkillId;
-                            let selectValue = 'custom';
-                            if (ex.subSkillId && ex.skillId) selectValue = `subskill:${ex.subSkillId}:${ex.skillId}`;
-                            else if (ex.skillId) selectValue = `skill:${ex.skillId}`;
-
-                            return (
-                                <div key={ex.id} className="p-4 bg-raisin-black/50 rounded-lg space-y-3 border border-onyx/50">
-                                    <div className="flex justify-between items-center">
-                                        <select
-                                            value={selectValue}
-                                            onChange={(e) => handleExerciseChange(sectionIndex, exerciseIndex, { skillSelection: e.target.value } as any)}
-                                            className="w-full p-2 bg-raisin-black border border-onyx rounded-md focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
-                                        >
-                                            {skillOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                        </select>
-                                        <button type="button" onClick={() => handleRemoveExercise(sectionIndex, exerciseIndex)} className="ml-3 text-bone/70 hover:text-bone p-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                                        </button>
-                                    </div>
-                                    {isCustom && (
-                                        <input
-                                            type="text"
-                                            placeholder="Nome do exercício personalizado"
-                                            value={ex.customName}
-                                            onChange={(e) => handleExerciseChange(sectionIndex, exerciseIndex, { customName: e.target.value })}
-                                            className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline"
-                                        />
-                                    )}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        <input type="number" placeholder="Séries" value={ex.sets || ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { sets: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
-                                        <input type="number" placeholder="Reps" value={ex.reps || ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { reps: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
-                                        <input type="number" placeholder="Mins" value={ex.duration ? ex.duration / 60 : ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { duration: Number(e.target.value) * 60 || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
-                                    </div>
-                                    <div className="pt-2">
-                                        <YoutubeLinkManager
-                                            links={ex.youtubeLinks || []}
-                                            onAddLink={(link) => handleExerciseChange(sectionIndex, exerciseIndex, { youtubeLinks: [...(ex.youtubeLinks || []), link] })}
-                                            onRemoveLink={(linkIndex) => handleExerciseChange(sectionIndex, exerciseIndex, { youtubeLinks: (ex.youtubeLinks || []).filter((_, i) => i !== linkIndex) })}
-                                            title="Tutoriais do Exercício"
-                                        />
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        <button type="button" onClick={() => handleAddExercise(sectionIndex)} className="w-full py-2 text-bone bg-raisin-black/50 hover:bg-raisin-black rounded-lg transition-colors">
-                            + Adicionar Exercício
-                        </button>
-                    </div>
-                 ))}
-                 <button type="button" onClick={handleAddSection} className="w-full py-2 text-bone bg-wenge/50 hover:bg-wenge rounded-lg transition-colors">
-                     + Adicionar Seção
+                     return (
+                        <div key={ex.id} className="p-4 bg-raisin-black/50 rounded-lg space-y-3 border border-onyx/50">
+                             <div className="flex justify-between items-center">
+                                 <select
+                                     value={selectValue}
+                                     onChange={(e) => handleExerciseChange(index, { skillSelection: e.target.value } as any)}
+                                     className="w-full p-2 bg-raisin-black border border-onyx rounded-md focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
+                                 >
+                                     {skillOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                 </select>
+                                 <button type="button" onClick={() => handleRemoveExercise(index)} className="ml-3 text-bone/70 hover:text-bone p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                                 </button>
+                             </div>
+                             {isCustom && (
+                                <input
+                                    type="text"
+                                    placeholder="Nome do exercício personalizado"
+                                    value={ex.customName}
+                                    onChange={(e) => handleExerciseChange(index, { customName: e.target.value })}
+                                    className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline"
+                                />
+                             )}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <input type="number" placeholder="Séries" value={ex.sets || ''} onChange={e => handleExerciseChange(index, { sets: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
+                                <input type="number" placeholder="Reps" value={ex.reps || ''} onChange={e => handleExerciseChange(index, { reps: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
+                                <input type="number" placeholder="Segs" value={ex.duration || ''} onChange={e => handleExerciseChange(index, { duration: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
+                            </div>
+                             <div className="pt-2">
+                                <YoutubeLinkManager
+                                    links={ex.youtubeLinks || []}
+                                    onAddLink={(link) => handleExerciseChange(index, { youtubeLinks: [...(ex.youtubeLinks || []), link] })}
+                                    onRemoveLink={(linkIndex) => handleExerciseChange(index, { youtubeLinks: (ex.youtubeLinks || []).filter((_, i) => i !== linkIndex) })}
+                                    title="Tutoriais do Exercício"
+                                />
+                            </div>
+                        </div>
+                    )
+                 })}
+                 <button type="button" onClick={handleAddExercise} className="w-full py-2 text-bone bg-wenge/50 hover:bg-wenge rounded-lg transition-colors">
+                     + Adicionar Exercício
                  </button>
             </div>
 
             <div className="flex justify-end pt-4 gap-3">
                 <button type="button" onClick={onClose} className="px-4 py-2 bg-onyx text-isabelline rounded-lg hover:bg-raisin-black/80 transition-colors">Cancelar</button>
-                <button type="submit" className="px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Agendar Sessão</button>
+                <button type="submit" className="px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">
+                    {session ? 'Atualizar Sessão' : 'Agendar Sessão'}
+                </button>
             </div>
         </form>
     )
@@ -332,8 +307,9 @@ const CompleteSessionModal: React.FC<{
 
 
 const TrainingPlanner: React.FC = () => {
-    const { trainingData, updateTrainingSession, deleteTrainingSession, userSportsData } = useAppData();
+    const { trainingData, updateTrainingSession, deleteTrainingSession, userSkillsData } = useSkatingData();
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [sessionToEdit, setSessionToEdit] = useState<TrainingSession | null>(null);
     const [sessionToComplete, setSessionToComplete] = useState<TrainingSession | null>(null);
 
     const plannedSessions = trainingData.filter(s => !s.isCompleted).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -350,10 +326,20 @@ const TrainingPlanner: React.FC = () => {
         }
     };
 
+    const handleEdit = (session: TrainingSession) => {
+        setSessionToEdit(session);
+        setIsPlanModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsPlanModalOpen(false);
+        setSessionToEdit(null);
+    };
+
     const getExerciseName = (exercise: TrainingExercise): string => {
         if (exercise.customName) return exercise.customName;
-        for (const sport of userSportsData) {
-            for (const skill of sport.skills) {
+        for (const cat of userSkillsData) {
+            for (const skill of cat.skills) {
                 if (skill.id === exercise.skillId && !exercise.subSkillId) return skill.name;
                 const subSkill = skill.subSkills.find(s => s.id === exercise.subSkillId);
                 if (subSkill) return subSkill.name;
@@ -366,7 +352,7 @@ const TrainingPlanner: React.FC = () => {
         const parts = [];
         if (ex.sets) parts.push(`${ex.sets} séries`);
         if (ex.reps) parts.push(`${ex.reps} reps`);
-        if (ex.duration) parts.push(`${ex.duration / 60} min`);
+        if (ex.duration) parts.push(`${ex.duration} segs`);
         return parts.join(', ');
     };
     
@@ -404,22 +390,21 @@ const TrainingPlanner: React.FC = () => {
                                             </ul>
                                         </div>
                                     )}
-                                    {session.sections.map(section => (
-                                        <div key={section.id} className="mt-4">
-                                            <h4 className="text-md font-semibold text-isabelline/90 mb-1">{section.name}</h4>
-                                            <ul className="space-y-2 text-sm">
-                                                {section.exercises.map(ex => (
-                                                    <li key={ex.id} className="text-isabelline/90">
-                                                        <span className="font-semibold">{getExerciseName(ex)}</span>
-                                                        <span className="text-bone/70 ml-2">({formatExerciseDetails(ex)})</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    ))}
+                                    <h4 className="text-sm font-semibold text-isabelline/90 mb-1">Exercícios:</h4>
+                                    <ul className="space-y-2 text-sm">
+                                        {session.exercises.map(ex => (
+                                            <li key={ex.id} className="text-isabelline/90">
+                                                <span className="font-semibold">{getExerciseName(ex)}</span>
+                                                <span className="text-bone/70 ml-2">({formatExerciseDetails(ex)})</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setSessionToComplete(session)} className="w-full px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Marcar como Concluída</button>
+                                    <button onClick={() => handleEdit(session)} className="px-3 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors">
+                                        <PencilIcon className="h-5 w-5" />
+                                    </button>
                                     <button onClick={() => handleDelete(session.id)} className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
                                     </button>
@@ -451,6 +436,9 @@ const TrainingPlanner: React.FC = () => {
                                        }`}>
                                            {session.performance}
                                        </div>
+                                       <button onClick={(e) => { e.preventDefault(); handleEdit(session); }} className="p-2 text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/20 rounded-full transition-colors">
+                                            <PencilIcon className="h-5 w-5" />
+                                       </button>
                                        <button onClick={(e) => { e.preventDefault(); handleDelete(session.id); }} className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/20 rounded-full transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
                                        </button>
@@ -470,28 +458,23 @@ const TrainingPlanner: React.FC = () => {
                                     )}
                                      <div className="mt-4">
                                         <h4 className="font-semibold text-isabelline mb-2">Exercícios Realizados:</h4>
-                                        {session.sections.map(section => (
-                                            <div key={section.id} className="mt-2">
-                                                <h5 className="font-semibold text-isabelline/90">{section.name}</h5>
-                                                <ul className="space-y-2 text-sm list-disc list-inside pl-5">
-                                                    {section.exercises.map(ex => (
-                                                        <li key={ex.id} className="text-isabelline/90">
-                                                            <div>
-                                                                <span className="font-semibold">{getExerciseName(ex)}</span>
-                                                                <span className="text-bone/70 ml-2">({formatExerciseDetails(ex)})</span>
-                                                            </div>
-                                                            {ex.youtubeLinks && ex.youtubeLinks.length > 0 && (
-                                                                <ul className="pl-5 mt-1 space-y-1 text-xs list-disc list-inside">
-                                                                    {ex.youtubeLinks.map((link, i) => (
-                                                                        <li key={i}><a href={link} target="_blank" rel="noopener noreferrer" className="text-bone hover:underline">{link}</a></li>
-                                                                    ))}
-                                                                </ul>
-                                                            )}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
+                                        <ul className="space-y-2 text-sm list-disc list-inside">
+                                            {session.exercises.map(ex => (
+                                                <li key={ex.id} className="text-isabelline/90">
+                                                    <div>
+                                                        <span className="font-semibold">{getExerciseName(ex)}</span>
+                                                        <span className="text-bone/70 ml-2">({formatExerciseDetails(ex)})</span>
+                                                    </div>
+                                                     {ex.youtubeLinks && ex.youtubeLinks.length > 0 && (
+                                                        <ul className="pl-5 mt-1 space-y-1 text-xs list-disc list-inside">
+                                                            {ex.youtubeLinks.map((link, i) => (
+                                                                <li key={i}><a href={link} target="_blank" rel="noopener noreferrer" className="text-bone hover:underline">{link}</a></li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
                                 </div>
                             </details>
@@ -502,8 +485,8 @@ const TrainingPlanner: React.FC = () => {
                 )}
             </section>
             
-            <Modal isOpen={isPlanModalOpen} onClose={() => setIsPlanModalOpen(false)} title="Agendar Nova Sessão de Treino">
-                <TrainingSessionForm onClose={() => setIsPlanModalOpen(false)} />
+            <Modal isOpen={isPlanModalOpen} onClose={handleCloseModal} title={sessionToEdit ? "Editar Sessão de Treino" : "Agendar Nova Sessão de Treino"}>
+                <TrainingSessionForm onClose={handleCloseModal} session={sessionToEdit || undefined} />
             </Modal>
             
             {sessionToComplete && (
