@@ -31,12 +31,20 @@ export interface TrainingExercise {
   youtubeLinks?: string[];
 }
 
+export interface TrainingSection {
+  id: string;
+  name: string;
+  duration?: number; // in minutes
+  reps?: number;
+  exercises: TrainingExercise[];
+}
+
 export interface TrainingSession {
   id: string;
   date: string;
   title: string;
   duration: number; // in minutes
-  exercises: TrainingExercise[];
+  sections: TrainingSection[];
   notes: string;
   performance: 'Bom' | 'Ok' | 'Ruim' | null;
   isCompleted: boolean;
