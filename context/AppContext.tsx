@@ -20,6 +20,7 @@ interface AppContextType {
   addSkillToShop: (sportId: string, skillName: string) => void;
   deleteSkillFromShop: (sportId: string, skillId: string) => void;
   addSport: (sportName: string) => void;
+  duplicateTrainingSession: (session: TrainingSession) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -111,6 +112,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteTrainingSession = useCallback((sessionId: string) => {
     setTrainingData(prev => prev.filter(session => session.id !== sessionId));
+  }, []);
+
+  const duplicateTrainingSession = useCallback((session: TrainingSession) => {
+    const newSession = JSON.parse(JSON.stringify(session));
+
+    const nextDay = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
+
+    newSession.id = `session-${Date.now()}`;
+    newSession.isCompleted = false;
+    newSession.performance = null;
+    newSession.notes = '';
+    newSession.date = nextDay.toISOString().split('T')[0];
+
+    addTrainingSession(newSession);
   }, []);
 
   const addSkillToShop = useCallback((sportId: string, skillName: string) => {
@@ -318,6 +333,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addSkillToShop,
     deleteSkillFromShop,
     addSport,
+    duplicateTrainingSession,
   };
 
   return (
