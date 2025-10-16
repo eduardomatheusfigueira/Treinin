@@ -354,8 +354,10 @@ const CompleteSessionModal: React.FC<{
 };
 
 
+import { UndoIcon, DuplicateIcon } from '../components/Icons';
+
 const TrainingPlanner: React.FC = () => {
-    const { trainingData, updateTrainingSession, deleteTrainingSession, userSportsData, duplicateTrainingSession } = useAppData();
+    const { trainingData, updateTrainingSession, deleteTrainingSession, userSportsData, uncompleteTrainingSession, duplicateTrainingSession } = useAppData();
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [sessionToEdit, setSessionToEdit] = useState<TrainingSession | null>(null);
     const [sessionToComplete, setSessionToComplete] = useState<TrainingSession | null>(null);
@@ -445,10 +447,7 @@ const TrainingPlanner: React.FC = () => {
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setSessionToComplete(session)} className="w-full px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Marcar como Concluída</button>
                                     <button onClick={() => duplicateTrainingSession(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Duplicar Treino">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
-                                            <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" />
-                                        </svg>
+                                        <DuplicateIcon className="h-5 w-5" />
                                     </button>
                                     <button onClick={() => setSessionToEdit(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Editar Treino">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
@@ -484,11 +483,11 @@ const TrainingPlanner: React.FC = () => {
                                        }`}>
                                            {session.performance}
                                        </div>
+                                       <button onClick={(e) => { e.preventDefault(); uncompleteTrainingSession(session.id); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors" title="Desfazer Conclusão">
+                                            <UndoIcon className="h-5 w-5" />
+                                       </button>
                                        <button onClick={(e) => { e.preventDefault(); duplicateTrainingSession(session); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors" title="Duplicar Treino">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
-                                                <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" />
-                                            </svg>
+                                            <DuplicateIcon className="h-5 w-5" />
                                        </button>
                                        <button onClick={(e) => { e.preventDefault(); setSessionToEdit(session); }} className="p-2 text-bone/70 hover:text-bone hover:bg-onyx/50 rounded-full transition-colors" title="Editar Treino">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>

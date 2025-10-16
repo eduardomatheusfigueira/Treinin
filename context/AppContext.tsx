@@ -20,6 +20,7 @@ interface AppContextType {
   addSkillToShop: (sportId: string, skillName: string) => void;
   deleteSkillFromShop: (sportId: string, skillId: string) => void;
   addSport: (sportName: string) => void;
+  uncompleteTrainingSession: (sessionId: string) => void;
   duplicateTrainingSession: (session: TrainingSession) => void;
 }
 
@@ -114,16 +115,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTrainingData(prev => prev.filter(session => session.id !== sessionId));
   }, []);
 
+  const uncompleteTrainingSession = useCallback((sessionId: string) => {
+    updateTrainingSession(sessionId, {
+      isCompleted: false,
+      performance: null,
+      notes: '',
+    });
+  }, []);
+
   const duplicateTrainingSession = useCallback((session: TrainingSession) => {
     const newSession = JSON.parse(JSON.stringify(session));
-
-    const nextDay = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
 
     newSession.id = `session-${Date.now()}`;
     newSession.isCompleted = false;
     newSession.performance = null;
     newSession.notes = '';
-    newSession.date = nextDay.toISOString().split('T')[0];
+    newSession.date = session.date;
 
     addTrainingSession(newSession);
   }, []);
@@ -333,6 +340,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addSkillToShop,
     deleteSkillFromShop,
     addSport,
+    uncompleteTrainingSession,
     duplicateTrainingSession,
   };
 

@@ -14,7 +14,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ progress, onProgressChange })
         return (
           <button
             key={level}
-            onClick={() => onProgressChange(progress === level ? 0 : level)}
+            onClick={() => onProgressChange(progress === level ? level - 1 : level)}
             className={`h-3 flex-1 rounded-sm transition-all duration-300 transform hover:scale-110 ${
               isActive ? 'bg-bone shadow-[0_0_8px_0] shadow-bone/40' : 'bg-onyx'
             }`}
