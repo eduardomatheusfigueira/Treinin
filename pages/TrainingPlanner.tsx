@@ -252,7 +252,7 @@ const TrainingSessionForm: React.FC<{
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                         <input type="number" placeholder="Séries" value={ex.sets || ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { sets: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
                                         <input type="number" placeholder="Reps" value={ex.reps || ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { reps: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
-                                        <input type="number" placeholder="Mins" value={ex.duration ? ex.duration / 60 : ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { duration: Number(e.target.value) * 60 || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
+                                        <input type="number" placeholder="Segs" value={ex.duration || ''} onChange={e => handleExerciseChange(sectionIndex, exerciseIndex, { duration: Number(e.target.value) || undefined })} className="w-full p-2 bg-raisin-black border border-onyx rounded-md text-isabelline" />
                                     </div>
                                     <div className="pt-2">
                                         <YoutubeLinkManager
@@ -390,7 +390,7 @@ const TrainingPlanner: React.FC = () => {
         const parts = [];
         if (ex.sets) parts.push(`${ex.sets} séries`);
         if (ex.reps) parts.push(`${ex.reps} reps`);
-        if (ex.duration) parts.push(`${ex.duration / 60} min`);
+        if (ex.duration) parts.push(`${ex.duration} segs`);
         return parts.join(', ');
     };
     
