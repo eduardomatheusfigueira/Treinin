@@ -1,14 +1,14 @@
 import React from 'react';
 
 interface ProgressBarProps {
-  progress: number; // 0-5
+  progress: number; // 0-10
   onProgressChange: (newProgress: number) => void;
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ progress, onProgressChange }) => {
   return (
     <div className="flex items-center gap-2 w-full max-w-xs">
-      {[...Array(5)].map((_, index) => {
+      {[...Array(10)].map((_, index) => {
         const level = index + 1;
         const isActive = level <= progress;
         return (
