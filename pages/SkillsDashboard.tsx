@@ -10,6 +10,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 
 interface SkillDetailModalProps {
   subSkill: SubSkill | null;
+  sportName: string;
   onClose: () => void;
   onUpdate: (updates: Partial<SubSkill>) => void;
 }
@@ -22,7 +23,7 @@ type ItemToDelete = {
     subSkillId?: string;
 };
 
-const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, onClose, onUpdate }) => {
+const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, sportName, onClose, onUpdate }) => {
   const [youtubeLink, setYoutubeLink] = useState('');
   const [isLoadingAi, setIsLoadingAi] = useState(false);
 
@@ -37,7 +38,7 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, onClose, 
   
   const handleGenerateTips = async () => {
     setIsLoadingAi(true);
-    const tips = await getSkillTips(subSkill.name);
+    const tips = await getSkillTips(subSkill.name, sportName);
     onUpdate({ description: tips });
     setIsLoadingAi(false);
   };
@@ -146,10 +147,11 @@ const SubSkillItem: React.FC<{ subSkill: SubSkill, onUpdateProgress: (progress: 
 
 const SkillItem: React.FC<{ 
     sportId: string,
+    sportName: string,
     skill: Skill,
     onRequestDeleteSkill: (skillId: string, skillName: string) => void,
     onRequestDeleteSubSkill: (skillId: string, subSkillId: string, subSkillName: string) => void
-}> = ({ sportId, skill, onRequestDeleteSkill, onRequestDeleteSubSkill }) => {
+}> = ({ sportId, sportName, skill, onRequestDeleteSkill, onRequestDeleteSubSkill }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { updateSubSkill, addSubSkill } = useAppData();
   const [selectedSubSkill, setSelectedSubSkill] = useState<SubSkill | null>(null);
@@ -242,6 +244,7 @@ const SkillItem: React.FC<{
       )}
       <SkillDetailModal 
         subSkill={selectedSubSkill} 
+        sportName={sportName}
         onClose={() => setSelectedSubSkill(null)}
         onUpdate={handleUpdateSubSkillDetails}
       />
@@ -351,6 +354,7 @@ const SkillsDashboard: React.FC = () => {
                     <SkillItem
                       key={skill.id}
                       sportId={activeSport.id}
+                      sportName={activeSport.name}
                       skill={skill}
                       onRequestDeleteSkill={(skillId, name) => handleRequestDeleteSkill(activeSport.id, skillId, name)}
                       onRequestDeleteSubSkill={(skillId, subId, name) => handleRequestDeleteSubSkill(activeSport.id, skillId, subId, name)}
