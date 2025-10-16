@@ -7,6 +7,7 @@ import { Skill, SubSkill, Sport } from '../types';
 import Modal from '../components/Modal';
 import { getSkillTips } from '../services/geminiService';
 import ConfirmationModal from '../components/ConfirmationModal';
+import YoutubeEmbed from '../components/YoutubeEmbed';
 
 interface SkillDetailModalProps {
   subSkill: SubSkill | null;
@@ -34,6 +35,12 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, sportName
       onUpdate({ youtubeLinks: [...subSkill.youtubeLinks, youtubeLink] });
       setYoutubeLink('');
     }
+  };
+
+  const handleDeleteLink = (index: number) => {
+    const newLinks = [...subSkill.youtubeLinks];
+    newLinks.splice(index, 1);
+    onUpdate({ youtubeLinks: newLinks });
   };
   
   const handleGenerateTips = async () => {
@@ -77,11 +84,11 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, sportName
             />
             <button onClick={handleAddLink} className="px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors w-full sm:w-auto">Adicionar</button>
           </div>
-          <ul className="space-y-2 break-words">
+          <div className="space-y-4">
             {subSkill.youtubeLinks.map((link, i) => (
-              <li key={i}><a href={link} target="_blank" rel="noopener noreferrer" className="text-bone hover:underline">{link}</a></li>
+              <YoutubeEmbed key={i} url={link} onDelete={() => handleDeleteLink(i)} />
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </Modal>
