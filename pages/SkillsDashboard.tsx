@@ -196,13 +196,13 @@ const SkillItem: React.FC<{
                 </button>
                 
                 <div className="flex items-center gap-4 flex-grow">
-                    <div className="w-2 h-10 rounded-full bg-bone" style={{opacity: overallProgress / 5}}></div>
+                    <div className="w-2 h-10 rounded-full bg-bone" style={{opacity: overallProgress / 10}}></div>
                     <h3 className="text-xl font-semibold text-isabelline">{skill.name}</h3>
                 </div>
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="text-sm text-bone/70 hidden sm:block">{Math.round((overallProgress / 5) * 100)}% Dominado</div>
+                <div className="text-sm text-bone/70 hidden sm:block">{Math.round((overallProgress / 10) * 100)}% Dominado</div>
                 <ChevronDownIcon className={`w-6 h-6 text-bone/70 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </div>
         </div>
