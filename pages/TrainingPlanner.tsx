@@ -53,6 +53,7 @@ const TrainingSessionForm: React.FC<{
     const { addTrainingSession, updateTrainingSession, userSportsData } = useAppData();
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState('10:00');
     const [duration, setDuration] = useState(60);
     const [sections, setSections] = useState<TrainingSection[]>([]);
     const [sessionYoutubeLinks, setSessionYoutubeLinks] = useState<string[]>([]);
@@ -61,6 +62,7 @@ const TrainingSessionForm: React.FC<{
         if (session) {
             setTitle(session.title);
             setDate(session.date);
+            setTime(session.time || '10:00');
             setDuration(session.duration);
             setSections(session.sections);
             setSessionYoutubeLinks(session.youtubeLinks || []);
@@ -137,6 +139,7 @@ const TrainingSessionForm: React.FC<{
         const sessionData = {
             title,
             date,
+            time,
             duration,
             sections,
             youtubeLinks: sessionYoutubeLinks,
@@ -169,15 +172,27 @@ const TrainingSessionForm: React.FC<{
                     required
                 />
             </div>
-             <div>
-                <label className="block text-sm font-medium text-bone/80 mb-1">Data</label>
-                <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full p-2 bg-raisin-black border border-onyx rounded-lg focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
-                    required
-                />
+             <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-bone/80 mb-1">Data</label>
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full p-2 bg-raisin-black border border-onyx rounded-lg focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-bone/80 mb-1">Horário</label>
+                    <input
+                        type="time"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full p-2 bg-raisin-black border border-onyx rounded-lg focus:ring-2 focus:ring-bone focus:outline-none text-isabelline"
+                        required
+                    />
+                </div>
             </div>
              <div>
                 <label className="block text-sm font-medium text-bone/80 mb-1">Duração Total (minutos)</label>
@@ -365,6 +380,7 @@ const TrainingPlanner: React.FC = () => {
     const [sessionToEdit, setSessionToEdit] = useState<TrainingSession | null>(null);
     const [sessionToComplete, setSessionToComplete] = useState<TrainingSession | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(Cookies.get('google_access_token') || null);
+    const [calendarStatus, setCalendarStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
     const plannedSessions = trainingData.filter(s => !s.isCompleted).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const completedSessions = trainingData.filter(s => s.isCompleted).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -420,24 +436,30 @@ const TrainingPlanner: React.FC = () => {
         if (!accessToken) {
             login();
         } else {
+            setCalendarStatus('loading');
+            const startTime = new Date(`${session.date}T${session.time || '10:00'}:00`);
+            const endTime = new Date(startTime.getTime() + session.duration * 60000);
+
             const event = {
                 'summary': session.title,
                 'description': `Treino de ${session.duration} minutos.`,
                 'start': {
-                    'dateTime': `${session.date}T${session.time || '10:00'}:00`,
+                    'dateTime': startTime.toISOString(),
                     'timeZone': 'America/Sao_Paulo',
                 },
                 'end': {
-                    'dateTime': new Date(new Date(`${session.date}T${session.time || '10:00'}:00`).getTime() + session.duration * 60000).toISOString(),
+                    'dateTime': endTime.toISOString(),
                     'timeZone': 'America/Sao_Paulo',
                 },
             };
             try {
                 await createGoogleCalendarEvent(accessToken, event);
-                alert('Evento adicionado ao Google Calendar!');
+                setCalendarStatus('success');
+                setTimeout(() => setCalendarStatus('idle'), 3000);
             } catch (error) {
                 console.error("Erro ao criar evento no Google Calendar: ", error);
-                alert('Falha ao adicionar evento ao Google Calendar.');
+                setCalendarStatus('error');
+                setTimeout(() => setCalendarStatus('idle'), 3000);
             }
         }
     };
@@ -487,9 +509,16 @@ const TrainingPlanner: React.FC = () => {
                                 </div>
                                 <div className="flex gap-2 mt-4">
                                     <button onClick={() => setSessionToComplete(session)} className="w-full px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors">Marcar como Concluída</button>
-                                    <button onClick={() => handleAddToCalendar(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Adicionar ao Google Calendar">
-                                        <CalendarPlusIcon className="h-5 w-5" />
+                                    <button
+                                        onClick={() => handleAddToCalendar(session)}
+                                        className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors"
+                                        title="Adicionar ao Google Calendar"
+                                        disabled={calendarStatus === 'loading'}
+                                    >
+                                        {calendarStatus === 'loading' ? 'Adicionando...' : <CalendarPlusIcon className="h-5 w-5" />}
                                     </button>
+                                    {calendarStatus === 'success' && <p className="text-xs text-green-500">Adicionado!</p>}
+                                    {calendarStatus === 'error' && <p className="text-xs text-red-500">Falhou!</p>}
                                     <button onClick={() => setSessionToEdit(session)} className="px-3 py-2 bg-onyx/50 text-bone rounded-lg hover:bg-onyx transition-colors" title="Editar Treino">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
                                     </button>

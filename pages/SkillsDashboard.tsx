@@ -7,7 +7,6 @@ import { Skill, SubSkill, Sport } from '../types';
 import Modal from '../components/Modal';
 import { getSkillTips } from '../services/geminiService';
 import ConfirmationModal from '../components/ConfirmationModal';
-import YoutubeEmbed from '../components/YoutubeEmbed';
 
 interface SkillDetailModalProps {
   subSkill: SubSkill | null;
@@ -35,12 +34,6 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, sportName
       onUpdate({ youtubeLinks: [...subSkill.youtubeLinks, youtubeLink] });
       setYoutubeLink('');
     }
-  };
-
-  const handleDeleteLink = (index: number) => {
-    const newLinks = [...subSkill.youtubeLinks];
-    newLinks.splice(index, 1);
-    onUpdate({ youtubeLinks: newLinks });
   };
   
   const handleGenerateTips = async () => {
@@ -84,11 +77,11 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({ subSkill, sportName
             />
             <button onClick={handleAddLink} className="px-4 py-2 bg-bone text-raisin-black font-semibold rounded-lg hover:bg-isabelline transition-colors w-full sm:w-auto">Adicionar</button>
           </div>
-          <div className="space-y-4">
+          <ul className="space-y-2 break-words">
             {subSkill.youtubeLinks.map((link, i) => (
-              <YoutubeEmbed key={i} url={link} onDelete={() => handleDeleteLink(i)} />
+              <li key={i}><a href={link} target="_blank" rel="noopener noreferrer" className="text-bone hover:underline">{link}</a></li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
     </Modal>
@@ -203,13 +196,13 @@ const SkillItem: React.FC<{
                 </button>
                 
                 <div className="flex items-center gap-4 flex-grow">
-                    <div className="w-2 h-10 rounded-full bg-bone" style={{opacity: overallProgress / 10}}></div>
+                    <div className="w-2 h-10 rounded-full bg-bone" style={{opacity: overallProgress / 5}}></div>
                     <h3 className="text-xl font-semibold text-isabelline">{skill.name}</h3>
                 </div>
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="text-sm text-bone/70 hidden sm:block">{Math.round((overallProgress / 10) * 100)}% Dominado</div>
+                <div className="text-sm text-bone/70 hidden sm:block">{Math.round((overallProgress / 5) * 100)}% Dominado</div>
                 <ChevronDownIcon className={`w-6 h-6 text-bone/70 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </div>
         </div>

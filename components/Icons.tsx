@@ -92,18 +92,3 @@ export const CalendarPlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path d="M12 10v8"/>
     </svg>
 );
-
-export const EyeSlashIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <path d="M10.5 8.5L2 22.25M7.75 7.75L4 4"/>
-        <path d="M14.25 14.25L22 22.25"/>
-        <path d="M17.5 10.5c-1.5 3-4.5 4.5-7.5 4.5-2 0-4-1-6-3"/>
-        <path d="M9.5 6.5C11 5 14.5 4 17.5 6c2.5 1.5 4.5 4.5 4.5 4.5"/>
-    </svg>
-);
-
-export const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <polygon points="5 3 19 12 5 21 5 3" />
-    </svg>
-);

@@ -16,9 +16,3 @@ export const createGoogleCalendarEvent = async (accessToken: string, event: any)
     }
     return await res.json();
 };
-
-export const handleSignOut = (setAccessToken: (token: string | null) => void) => {
-    Cookies.remove('google_access_token', { path: '/' });
-    googleLogout();
-    setAccessToken(null);
-};
